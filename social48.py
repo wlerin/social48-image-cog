@@ -8,20 +8,16 @@ sister_groups = ['nmb48', 'ske48', 'hkt48', 'ngt48', 'nogizaka46', 'jkt48', 'snh
 class Social48Images(object):
     @staticmethod
     def find_member(target, index):
-        
-        result = [e for e in index if len(e['accounts']) > 0 and e['accounts'][0]['handle'].lower() == target.lower()]
-        if result: return result
-            
-
-        result = [e for e in index if e['engNick'].lower() == target.lower()] + \
-        [e for e in index if e['engName'].lower()  == target.lower().replace('-', ' ')] + \
-        [e for e in index if e['jpnName']  == target]
-        if result: return result
-
-        result = [e for e in index if target.lower() in e['engName'].lower()] + \
-        [e for e in index if target.lower().replace('-', ' ') in e['tags']]
-        if result: return result
-        else: return []
+        return ([e for e in index if len(e['accounts']) > 0 and e['accounts'][0]['handle'].lower() == target.lower()]
+                or
+                [e for e in index if e['engNick'].lower() == target.lower()] + \
+                [e for e in index if e['engName'].lower()  == target.lower().replace('-', ' ')] + \
+                [e for e in index if e['jpnName']  == target]
+                or 
+                [e for e in index if target.lower() in e['engName'].lower()] + \
+                [e for e in index if target.lower().replace('-', ' ') in e['tags']]
+                or
+                [])
 
     @staticmethod
     def guess_group(item):

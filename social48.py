@@ -6,6 +6,12 @@ import datetime
 import calendar
 sister_groups = ['nmb48', 'ske48', 'hkt48', 'ngt48', 'nogizaka46', 'jkt48', 'snh48']
 
+from discord.embeds import Embed
+
+
+
+
+
 class Social48Images(object):
     @staticmethod
     def list_previous_months(count=3):
@@ -68,9 +74,71 @@ class Social48Images(object):
         }
         with open('/library/media/akb48/social48/social48_index.json', encoding='utf8') as infp:
             self.index = json.load(infp)['members']
-        
+    
+    @commands.command(pass_context=True)
+    async def test(self, context):
+        video_url = 'https://video.twimg.com/ext_tw_video/886927908026974208/pu/vid/720x720/80aBs03U6PRl4XEW.mp4'
+        video_url2 = 'https://moviestat.7gogo.jp/output/gN3r1SOGblf9GtN76wEuUm==/hq/EIOglrc4OQGAsjgE2zkduNq2.mp4'
+        embed = Embed()
+        embed._video = {
+            "url": video_url,
+            "height": 720,
+            "width": 720
+        }
+        embed.add_field(name="Test", value="test")
+
+        await self.bot.say(embed=embed)
+
+    @commands.command(pass_context=True)
+    async def usage(self, context):
+        owner = await self.bot.get_user_info(self.bot.settings.owner)
+        await self.bot.say("""Extended Usage:
+    [p]social48 [option:value] [now] [recent] Member Name
+
+Unfortunately due to the way the bot finds images there are a lot of idiosyncrasies.
+
+For example:
+    * Some members' nicknames will work. Most of them won't.
+    * Spelling is usually Wiki48 spelling, except when it isn't (e.g. `Cho Kurena`)
+    * Individual NGT48 members are not available, but try just "ngt48"
+    * Asking for a Team 8 member will pull a random photo from every girl in her region.
+    * Nogizaka46 is available, except for 3rd gen.
+    * No Keyakizaka46
+    * No group without public social media (e.g. STU48, AKB48 16th gen)
+    * A handful of (mainly graduated(?) Nogi) accounts are filled with seemingly random AKB48 photos. If you find one of these please PM {} with the name and image url.
+
+------
+
+As of 2017-07-17, new experimental options are available: ```
+recent           last three months
+now              this month
+recent:N         N == number of months previous
+now:N            N == number of months previous 
+                 (same as recent)
+dates:YYYY-MM    year and month to search 
+                 can omit the month
+                 separate multiple dates with commas
+                 e.g. 2017-01,2017-03```
+Simply type them anywhere after the command (in addition to the member name):```
+[p]social48 Muto Tomu recent
+[p]social48 recent Tomu
+[p]social48 Murayama dates:2014-01,2014-02,2014-03 Yuiri
+[p]social48 akb48 recent:2```""".format(owner.mention))
+
     @commands.command(name="social48", pass_context=True, aliases=["s48", "s"])
     async def social48(self, context, *target):
+        """Simple 48g (and Nogi) image bot.
+
+        Default [p]refix: #!
+
+        Aliases: social48, s48, s
+
+        Basic usage:
+            [p]social48 Muto Tomu
+            [p]social48 recent Tomu
+
+        Type [p]usage for (much) more
+        """
         # find member accounts, pick a random image
         options = {}
 

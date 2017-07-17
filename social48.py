@@ -2,10 +2,28 @@ from discord.ext import commands
 import json
 import glob
 import random
-
+import datetime
+import calendar
 sister_groups = ['nmb48', 'ske48', 'hkt48', 'ngt48', 'nogizaka46', 'jkt48', 'snh48']
 
 class Social48Images(object):
+    @staticmethod
+    def list_previous_months(count=3):
+        curr_date = datetime.datetime.now()
+        def get_prev_month(year, month):
+            if month == 1:
+                year, month = year-1, 12
+            else:
+                month -= 1
+            return year, month
+
+        months = []
+        year, month = curr_date.year, curr_date.month
+        for _ in range(count):
+            months.append('{}-{:02d}'.format(year, month))
+            year, month = get_prev_month(year, month)
+        return months
+
     @staticmethod
     def find_member(target, index):
         return ([e for e in index if len(e['accounts']) > 0 and e['accounts'][0]['handle'].lower() == target.lower()]
@@ -41,21 +59,63 @@ class Social48Images(object):
         self.rng.seed()
 
         self.services = {
-            'ameblo': 'ameblo/{group}/', 
-            'gplus': 'gplus/{group}/', 
-            'twitter': 'twitter/{group}/', 
-            'instagram': 'instagram/', 
+            'ameblo': 'ameblo/{group}/',
+            'gplus': 'gplus/{group}/',
+            'twitter': 'twitter/{group}/',
+            'instagram': 'instagram/',
             'nanagogo': 'nanagogo/',
             'nogizaka46-blog': 'nogizaka46-blog/'
         }
         with open('/library/media/akb48/social48/social48_index.json', encoding='utf8') as infp:
             self.index = json.load(infp)['members']
         
-    @commands.command(name="social48", pass_context=True)
-    async def social48(self, context, target="akb48"):
+    @commands.command(name="social48", pass_context=True, aliases=["s48", "s"])
+    async def social48(self, context, *target):
         # find member accounts, pick a random image
-        
-        for term in ['yoona']:
+        options = {}
+
+        if not target:
+            target = ['akb48']
+        else:
+            target = list(target)
+            option_indices = []
+            for item in target:
+                if ':' in item:
+                    option_indices.append(target.index(item))
+            count = 0
+
+            for index in option_indices:
+                opt_str = target.pop(index-count)
+                count += 1
+                opt_name, opt_val = opt_str.split(':', 1)
+                if opt_name in options:
+                    # TODO: make sure to check for this when processing options too
+                    # a more robust solution would only make lists out of options that are supposed to have multiple values, but i don't even know what options i'm going to include yet
+                    try:
+                        options[opt_name].append(opt_val)
+                    except AttributeError:
+                        options[opt_name] = [options[opt_name], opt_val]
+                else:
+                    if ',' in opt_val:  # multiple values, review this character
+                        opt_val = opt_val.split(',')
+                    options[opt_name] = opt_val
+
+            if 'now' in target:
+                target.remove('now')
+                options['now'] = 1
+            elif 'recent' in target:
+                target.remove('recent')
+                options['recent'] = 3
+            # if options:
+            #     await self.bot.say('WARNING: Options are highly experimental and volatile, and may change at any moment. As of writing, "dates" is the only option available.\n'
+            #                        "Found Options: {}".format(list(options.keys())))
+            
+            target = ' '.join(target)
+
+        if target.lower() in ('ngt48', 'ngt'):
+            target = 'NGT48_Info_bot'
+
+        for term in ('yoona',):
             if term in target.lower():
                 target = 'akb48'
         
@@ -64,6 +124,15 @@ class Social48Images(object):
             await self.bot.say('Could not find anything matching "{}"'.format(target))
             return 
         
+        # TODO: accept options like "year", "recent", etc.
+        match_dates = options.get('dates', [""])
+        if match_dates in ("now", "recent") or options.get("now", None) is not None or options.get("recent", None) is not None:
+            num_months = options.get("now", None) or options.get("recent", None) or 3
+            match_dates = self.list_previous_months(int(num_months))
+
+        if not isinstance(match_dates, list):
+            match_dates = [match_dates]
+
         while found:
             member = found.pop(self.rng.randint(0,len(found)-1))
             group = self.guess_group(member)
@@ -82,7 +151,8 @@ class Social48Images(object):
             for d in directories:
                 # await self.bot.say(d)
                 # found_images = glob.glob(d + "*/*.jpg"
-                images.extend(glob.glob(d + "*/*.jpg"))
+                for date in match_dates:
+                    images.extend(glob.glob(d + "{}*/*.jpg".format(date)))
             # for i in range(10):
             #    await self.bot.say(images[i])
             if len(images) == 0:
